@@ -1,0 +1,3 @@
+<launch>
+  <node name="line_detection" pkg="hallway" type="laserLineDetection" output="screen" launch-prefix="ddd --args"/>
+</launch>

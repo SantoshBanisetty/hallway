@@ -44,6 +44,7 @@ void hough_lines(Mat img)
     Mat dst, cdst;
     Canny(img, dst, 50, 200, 3);
     cvtColor(dst, cdst, CV_GRAY2BGR); 
+    float modeOfTheta;
     float comp = 0;
     int count = 0;   
     vector<float> r;
@@ -54,22 +55,27 @@ void hough_lines(Mat img)
 
     int counter = 1;
     int max = 0;
-    float modeOfTheta = lines[0][1];
-    //to find mode of the theta values which will be the slope of the hallway
-    for (int pass = 0; pass < lines.size() - 1; pass++)
+    if (lines.size() > 0)
     {
-        if ( lines[pass][1] == lines[pass+1][1] )
-        {
-            counter++;
-            if ( counter > max )
-            {
-                max = counter;
-                modeOfTheta = lines[pass][1];
-            }
-        } else
+    	/* code */
+    	modeOfTheta = lines[0][1];
+    	//to find mode of the theta values which will be the slope of the hallway
+    	for (int pass = 0; pass < lines.size() - 1; pass++)
+    	{
+        	if ( lines[pass][1] == lines[pass+1][1] )
+        	{
+            	counter++;
+            	if ( counter > max )
+            	{
+                	max = counter;
+                	modeOfTheta = lines[pass][1];
+            	}
+        	} else
             counter = 1; // reset counter.
+    	}
+    ROS_INFO ("mode of theta is %f", modeOfTheta);
     }
-    ROS_INFO ("mode of theta is %f", modeOfTheta);   
+       
 
     // To collect the two r values of the lines with slope as modeOfTheta (only the hallway lines)
 
@@ -195,14 +201,15 @@ void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
  
  ros::Subscriber laser = n.subscribe("/base_scan", 100, laserCallBack);
 
- ros::Rate rate(10);
- while (ros::ok())
- 	{
- 		#ifdef DEBUG
- 		ROS_INFO("Hurray! I am running!");
- 		#endif
- 		ros::spinOnce();
-    	rate.sleep();
- 	}
+ //ros::Rate rate(10);
+ // while (ros::ok())
+ // 	{
+ // 		#ifdef DEBUG
+ // 		ROS_INFO("Hurray! I am running!");
+ // 		#endif
+ // 		ros::spinOnce();
+ //    	rate.sleep();
+ // 	}
+ ros::spin();
 return 0;
  }
