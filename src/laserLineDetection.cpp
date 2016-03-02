@@ -3,6 +3,8 @@
  @Author: Santosh
  @Description: Eventually to find hallways using laser data
  */
+#include <iostream>
+#include <vector>
 
 #include "ros/ros.h"
 #include "std_msgs/String.h"
@@ -23,8 +25,8 @@
 #include <opencv2/highgui/highgui.hpp>
 
 //#define DEBUG
-#define MAXROWS 1000
-#define MAXCOLS 1000
+#define MAXROWS 900
+#define MAXCOLS 900
 #define RESOLUTION_FACTOR 2
 
 int laserOriginX = MAXCOLS/2;
@@ -41,39 +43,19 @@ void hough_lines(Mat img)
   {
     Mat dst, cdst;
     Canny(img, dst, 50, 200, 3);
-    cvtColor(dst, cdst, CV_GRAY2BGR);
-    // float r_values[], theta_values[]; 
-    // int count = 0;
-    
+    cvtColor(dst, cdst, CV_GRAY2BGR); 
+    float comp = 0;
+    int count = 0;   
+    vector<float> r;
     vector<Vec2f> lines;
     HoughLines(dst, lines, 1, CV_PI/180, 140, 0, 0 );
 
     ROS_INFO ("# lines : %lu", lines.size());
 
-    // for( size_t i = 0; i < lines.size(); i++ )
-    // {
-    // 	float rtemp = lines[i][0], theta = lines[i][1];
-    // 	rvalue[count] = lines[j][0];
-    // 	theta_values[count] = lines[j][1];
-    // 	for ( size_t j = i; j < lines.size(); j++ )
-    // 	{
-    // 		if (theta == lines[j][1])
-    // 		{
-    // 			if (abs(rtemp - lines[j][0])<=6.0)
-    // 			{
-
-    // 				rvalue[count] = lines[j][0];
-    // 				theta_values[count] = lines[j][1];
-    // 			}
-    // 		}
-    // 	}
-    // }
-    // float tempr = lines [0][0];
-    // float temptheta = lines[0][1];
-
     int counter = 1;
     int max = 0;
     float modeOfTheta = lines[0][1];
+    //to find mode of the theta values which will be the slope of the hallway
     for (int pass = 0; pass < lines.size() - 1; pass++)
     {
         if ( lines[pass][1] == lines[pass+1][1] )
@@ -87,11 +69,9 @@ void hough_lines(Mat img)
         } else
             counter = 1; // reset counter.
     }
-    ROS_INFO ("mode of theta is %f", modeOfTheta);
+    ROS_INFO ("mode of theta is %f", modeOfTheta);   
 
-    float comp = 0;
-    int count = 0;
-    float r[2] = {};
+    // To collect the two r values of the lines with slope as modeOfTheta (only the hallway lines)
 
     for( size_t i = 0; i < lines.size(); i++ )
     {
@@ -100,23 +80,15 @@ void hough_lines(Mat img)
       if ((theta == modeOfTheta) && abs(comp - rho) >=6 && count < 2)
       {
       	ROS_INFO("I am in condition");
-      	r[count] = rho;
+      	//r[count] = rho;
+      	r.push_back(rho);
       	comp = rho;
       	count++;
       }
-      //ROS_INFO ("r[%lu] = %f and theta[%lu] = %f", i, rho, i, theta);
-      // Point pt1, pt2;
-      // double a = cos(theta), b = sin(theta);
-      // double x0 = a*rho, y0 = b*rho;
-      // pt1.x = cvRound(x0 + 1000*(-b));
-      // pt1.y = cvRound(y0 + 1000*(a));
-      // pt2.x = cvRound(x0 - 1000*(-b));
-      // pt2.y = cvRound(y0 - 1000*(a));
-      // line( img, pt1, pt2, Scalar(0,0,255), 2, CV_AA);
     }
-    ROS_INFO ("size of r : %lu", sizeof(r)/sizeof(float));
+    ROS_INFO ("size of r : %lu", r.size()/*sizeof(r)/sizeof(float)*/);
 
-    for (int i = 0; i < sizeof(r)/sizeof(float); i++)
+    for (int i = 0; i < r.size()/*sizeof(r)/sizeof(float)*/; i++)
     {
     	ROS_INFO ("r values [%d] : %f", i, r[i]);
     	if (r[i] > 0)
@@ -133,6 +105,11 @@ void hough_lines(Mat img)
     }
     imshow("detected lines", img);
     waitKey(3);
+    
+    /*
+   	Original hough transform that detects lines ands their duplicates
+   	*/
+
     // for( size_t i = 0; i < lines.size(); i++ )
     // {
     //   float rho = lines[i][0], theta = lines[i][1];
@@ -158,13 +135,6 @@ void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
     {
         printf("No image data \n"); 
     }
-	// sensor_msgs::PointCloud2 cloud;
-	// cloud.header.frame_id = "sensor_frame";
-	//ros::NodeHandle n;
-	//ros::Publisher cloud_publisher = n.advertise<sensor_msgs::PointCloud2>("/cloud", 100);
-	
-	// projector_.projectLaser(*laserMsg, cloud);
-	// cloud_publisher.publish(cloud);
 	
 
 #ifdef DEBUG
@@ -187,9 +157,11 @@ void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
 		ROS_INFO("Just printing intensities [%d] : %f", i, laserMsg->intensities[i] );
 	}
 #endif 
+
 	double staringAngle = laserMsg->angle_min;
 	double endingAngle = laserMsg->angle_max;
 	double angleIncrement = laserMsg->angle_increment;
+	// Convert LaserScan messages into an Image
 	for (int i = 0; i < laserMsg->ranges.size(); ++i)
 	{
 		/* code */
@@ -207,25 +179,7 @@ void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
 			image.at<uchar>(shiftedY, shiftedX) = 0;
 		}
 		
-	}
-
-    /*For testing purpose only*/
-
-    // for (int i = 0; i < image.rows; ++i)
-    // {
-    // 	/* code */
-    // 	uchar *p = image.ptr(i);
-    // 	for (int j = 0; j < image.cols; ++j)
-    // 	{
-    // 		/* code */
-    		
-    // 		if (j == i)
-    // 		{
-    // 			/* code */
-    // 			p[j] = 0;
-    // 		}
-    // 	}
-    // }
+	} 
 
     hough_lines(image);
     // namedWindow("Display Image", WINDOW_AUTOSIZE );
