@@ -80,7 +80,6 @@ void hough_lines(Mat img)
       if ((theta == modeOfTheta) && abs(comp - rho) >=6 && count < 2)
       {
       	ROS_INFO("I am in condition");
-      	//r[count] = rho;
       	r.push_back(rho);
       	comp = rho;
       	count++;

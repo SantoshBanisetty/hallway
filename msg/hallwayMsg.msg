@@ -1,0 +1,4 @@
+string frame_id
+float32 theta_hallway
+float32 r_hallway
+float32 width_hallway
