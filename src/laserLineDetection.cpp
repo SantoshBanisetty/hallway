@@ -25,14 +25,14 @@
 #include <opencv2/highgui/highgui.hpp>
 
 //#define DEBUG
-#define MAXROWS 900
-#define MAXCOLS 900
-#define RESOLUTION_FACTOR 2
+#define MAXROWS 600
+#define MAXCOLS 600
+#define RESOLUTION_FACTOR 3
 
 int laserOriginX = MAXCOLS/2;
 int laserOriginY = MAXROWS/2;
-int shiftedOriginX = -MAXCOLS/2;
-int shiftedOriginY = -MAXROWS/2;
+int shiftedOriginX = -MAXCOLS*RESOLUTION_FACTOR/2;
+int shiftedOriginY = -MAXROWS*RESOLUTION_FACTOR/2;
 
 using namespace cv;
 using namespace std;
@@ -49,9 +49,9 @@ void hough_lines(Mat img)
     int count = 0;   
     vector<float> r;
     vector<Vec2f> lines;
-    HoughLines(dst, lines, 1, CV_PI/180, 140, 0, 0 );
+    HoughLines(dst, lines, 1, CV_PI/180, 120, 0, 0 );
 
-    ROS_INFO ("# lines : %lu", lines.size());
+    //ROS_INFO ("# lines : %lu", lines.size());
 
     int counter = 1;
     int max = 0;
@@ -73,7 +73,7 @@ void hough_lines(Mat img)
         	} else
             counter = 1; // reset counter.
     	}
-    ROS_INFO ("mode of theta is %f", modeOfTheta);
+    //ROS_INFO ("mode of theta is %f", modeOfTheta);
     }
        
 
@@ -81,21 +81,21 @@ void hough_lines(Mat img)
 
     for( size_t i = 0; i < lines.size(); i++ )
     {
-      ROS_INFO ("I am in loop");
+      //ROS_INFO ("I am in loop");
       float rho = lines[i][0], theta = lines[i][1];
       if ((theta == modeOfTheta) && abs(comp - rho) >=6 && count < 2)
       {
-      	ROS_INFO("I am in condition");
+      	//ROS_INFO("I am in condition");
       	r.push_back(rho);
       	comp = rho;
       	count++;
       }
     }
-    ROS_INFO ("size of r : %lu", r.size()/*sizeof(r)/sizeof(float)*/);
+    //ROS_INFO ("size of r : %lu", r.size());
 
     for (int i = 0; i < r.size()/*sizeof(r)/sizeof(float)*/; i++)
     {
-    	ROS_INFO ("r values [%d] : %f", i, r[i]);
+    	//ROS_INFO ("r values [%d] : %f", i, r[i]);
     	if (r[i] > 0)
     	{
 			Point pt1, pt2;
@@ -108,7 +108,7 @@ void hough_lines(Mat img)
 			line( img, pt1, pt2, Scalar(0,0,255), 2, CV_AA);
 		}
     }
-    imshow("detected lines", img);
+    imshow("Hallway", img);
     waitKey(3);
     
     /*
@@ -136,6 +136,14 @@ void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
 {
 	//ROS_INFO("I am called!");
 	Mat image(MAXROWS,MAXCOLS, CV_8UC1, Scalar(255));
+	for (int i = -2; i < 3; ++i)
+	{
+		for (int j = -2; j < 3; ++j)
+		{
+			image.at<uchar>(laserOriginY+j, laserOriginX+i) = 0;
+		}
+	}
+	
 	if ( !image.data )
     {
         printf("No image data \n"); 
