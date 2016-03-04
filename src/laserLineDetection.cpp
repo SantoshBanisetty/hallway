@@ -5,6 +5,7 @@
  */
 #include <iostream>
 #include <vector>
+#include <sstream>
 
 #include "ros/ros.h"
 #include "std_msgs/String.h"
@@ -12,17 +13,17 @@
 #include "sensor_msgs/LaserScan.h"
 #include "nav_msgs/Odometry.h"
 #include "laser_geometry/laser_geometry.h"
-#include <pcl/point_cloud.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <sensor_msgs/PointCloud2.h>
+//#include <pcl/point_cloud.h>
+//#include <pcl_conversions/pcl_conversions.h>
+//#include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/Image.h>
-#include <sstream>
-
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+
+#include "hallway/hallwayMsg.h"
 
 //#define DEBUG
 #define MAXROWS 600
@@ -37,100 +38,11 @@ int shiftedOriginY = -MAXROWS*RESOLUTION_FACTOR/2;
 using namespace cv;
 using namespace std;
 
+ros::Publisher hallwayPublisher;
+
 //laser_geometry::LaserProjection projector_;
-
-void hough_lines(Mat img)
-  {
-    Mat dst, cdst;
-    Canny(img, dst, 50, 200, 3);
-    cvtColor(dst, cdst, CV_GRAY2BGR); 
-    float modeOfTheta;
-    float comp = 0;
-    int count = 0;   
-    vector<float> r;
-    vector<Vec2f> lines;
-    HoughLines(dst, lines, 1, CV_PI/180, 120, 0, 0 );
-
-    //ROS_INFO ("# lines : %lu", lines.size());
-
-    int counter = 1;
-    int max = 0;
-    if (lines.size() > 0)
-    {
-    	/* code */
-    	modeOfTheta = lines[0][1];
-    	//to find mode of the theta values which will be the slope of the hallway
-    	for (int pass = 0; pass < lines.size() - 1; pass++)
-    	{
-        	if ( lines[pass][1] == lines[pass+1][1] )
-        	{
-            	counter++;
-            	if ( counter > max )
-            	{
-                	max = counter;
-                	modeOfTheta = lines[pass][1];
-            	}
-        	} else
-            counter = 1; // reset counter.
-    	}
-    //ROS_INFO ("mode of theta is %f", modeOfTheta);
-    }
-       
-
-    // To collect the two r values of the lines with slope as modeOfTheta (only the hallway lines)
-
-    for( size_t i = 0; i < lines.size(); i++ )
-    {
-      //ROS_INFO ("I am in loop");
-      float rho = lines[i][0], theta = lines[i][1];
-      if ((theta == modeOfTheta) && abs(comp - rho) >=6 && count < 2)
-      {
-      	//ROS_INFO("I am in condition");
-      	r.push_back(rho);
-      	comp = rho;
-      	count++;
-      }
-    }
-    //ROS_INFO ("size of r : %lu", r.size());
-
-    for (int i = 0; i < r.size()/*sizeof(r)/sizeof(float)*/; i++)
-    {
-    	//ROS_INFO ("r values [%d] : %f", i, r[i]);
-    	if (r[i] > 0)
-    	{
-			Point pt1, pt2;
-			double a = cos(modeOfTheta), b = sin(modeOfTheta);
-			double x0 = a*r[i], y0 = b*r[i];
-			pt1.x = cvRound(x0 + 1000*(-b));
-			pt1.y = cvRound(y0 + 1000*(a));
-			pt2.x = cvRound(x0 - 1000*(-b));
-			pt2.y = cvRound(y0 - 1000*(a));
-			line( img, pt1, pt2, Scalar(0,0,255), 2, CV_AA);
-		}
-    }
-    imshow("Hallway", img);
-    waitKey(3);
-    
-    /*
-   	Original hough transform that detects lines ands their duplicates
-   	*/
-
-    // for( size_t i = 0; i < lines.size(); i++ )
-    // {
-    //   float rho = lines[i][0], theta = lines[i][1];
-    //   ROS_INFO ("r[%lu] = %f and theta[%lu] = %f", i, rho, i, theta);
-    //   Point pt1, pt2;
-    //   double a = cos(theta), b = sin(theta);
-    //   double x0 = a*rho, y0 = b*rho;
-    //   pt1.x = cvRound(x0 + 1000*(-b));
-    //   pt1.y = cvRound(y0 + 1000*(a));
-    //   pt2.x = cvRound(x0 - 1000*(-b));
-    //   pt2.y = cvRound(y0 - 1000*(a));
-    //   line( img, pt1, pt2, Scalar(0,0,255), 2, CV_AA);
-    // }
-    // imshow("detected lines", img);
-    // waitKey(3);
-  }
+void publishHallwayData(vector<float> r, float modeOfTheta);
+void hough_lines(Mat img);
 
 void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
 {
@@ -204,10 +116,10 @@ void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
 
  int main(int argc, char **argv)
  {
- ros::init(argc, argv, "laserLineDetection");
- ros::NodeHandle n;
- 
- ros::Subscriber laser = n.subscribe("/base_scan", 100, laserCallBack);
+ 	ros::init(argc, argv, "laserLineDetection");
+ 	ros::NodeHandle n;
+ 	hallwayPublisher = n.advertise<hallway::hallwayMsg>("hallway_data", 100);
+ 	ros::Subscriber laser = n.subscribe("/base_scan", 100, laserCallBack);
 
  //ros::Rate rate(10);
  // while (ros::ok())
@@ -218,6 +130,130 @@ void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
  // 		ros::spinOnce();
  //    	rate.sleep();
  // 	}
- ros::spin();
-return 0;
+ 	ros::spin();
+	return 0;
  }
+
+ void hough_lines(Mat img)
+  {
+    Mat dst, cdst;
+    Canny(img, dst, 50, 200, 3);
+    cvtColor(dst, cdst, CV_GRAY2BGR); 
+    float modeOfTheta;
+    float comp = 0;
+    int count = 0;   
+    vector<float> r;
+    vector<Vec2f> lines;
+   
+
+    HoughLines(dst, lines, 1, CV_PI/180, 120, 0, 0 );
+
+    //ROS_INFO ("# lines : %lu", lines.size());
+
+    int counter = 1;
+    int max = 0;
+    if (lines.size() > 0)
+    {
+    	/* code */
+    	modeOfTheta = lines[0][1];
+    	//to find mode of the theta values which will be the slope of the hallway
+    	for (int pass = 0; pass < lines.size() - 1; pass++)
+    	{
+        	if ( lines[pass][1] == lines[pass+1][1] )
+        	{
+            	counter++;
+            	if ( counter > max )
+            	{
+                	max = counter;
+                	modeOfTheta = lines[pass][1];
+            	}
+        	} else
+            counter = 1; // reset counter.
+    	}
+    //ROS_INFO ("mode of theta is %f", modeOfTheta);
+    }
+       
+
+    // To collect the two r values of the lines with slope as modeOfTheta (only the hallway lines)
+
+    for( size_t i = 0; i < lines.size(); i++ )
+    {
+      //ROS_INFO ("I am in loop");
+      float rho = lines[i][0], theta = lines[i][1];
+      if ((theta == modeOfTheta) && abs(comp - rho) >= 6 && count < 2)
+      {
+      	//ROS_INFO("I am in condition");
+      	r.push_back(rho);
+      	comp = rho;
+      	count++;
+      }
+    }
+    //ROS_INFO ("size of r : %lu", r.size());
+
+    for (int i = 0; i < r.size(); i++)
+    {
+    	//ROS_INFO ("r values [%d] : %f", i, r[i]);
+    	if (r[i] > 0)
+    	{
+			Point pt1, pt2;
+			double a = cos(modeOfTheta), b = sin(modeOfTheta);
+			double x0 = a*r[i], y0 = b*r[i];
+			pt1.x = cvRound(x0 + 1000*(-b));
+			pt1.y = cvRound(y0 + 1000*(a));
+			pt2.x = cvRound(x0 - 1000*(-b));
+			pt2.y = cvRound(y0 - 1000*(a));
+			line( img, pt1, pt2, Scalar(0,0,255), 2, CV_AA);
+		}
+    }
+
+   	publishHallwayData (r, modeOfTheta);
+
+    imshow("Hallway", img);
+    waitKey(3);
+    
+    /*
+   	Original hough transform that detects lines ands their duplicates
+   	*/
+
+    // for( size_t i = 0; i < lines.size(); i++ )
+    // {
+    //   float rho = lines[i][0], theta = lines[i][1];
+    //   ROS_INFO ("r[%lu] = %f and theta[%lu] = %f", i, rho, i, theta);
+    //   Point pt1, pt2;
+    //   double a = cos(theta), b = sin(theta);
+    //   double x0 = a*rho, y0 = b*rho;
+    //   pt1.x = cvRound(x0 + 1000*(-b));
+    //   pt1.y = cvRound(y0 + 1000*(a));
+    //   pt2.x = cvRound(x0 - 1000*(-b));
+    //   pt2.y = cvRound(y0 - 1000*(a));
+    //   line( img, pt1, pt2, Scalar(0,0,255), 2, CV_AA);
+    // }
+    // imshow("detected lines", img);
+    // waitKey(3);
+  }
+
+
+void publishHallwayData(vector<float> r, float modeOfTheta)
+{
+	hallway::hallwayMsg msg;
+    stringstream ss;
+
+    ss << "Not with respect to the PR2 yet!";
+
+    // ROS_INFO ("theta : %f", modeOfTheta);
+    // for (int i = 0; i < r.size(); ++i)
+    // {
+    // 	ROS_INFO ("rvalue [%d] is %f", i, r[i]);
+    // }
+    
+    if (r.size() == 2) //if hallway 
+    {
+    	msg.frame_id = ss.str();
+    	msg.theta_hallway = modeOfTheta;
+    	msg.r_hallway = r[0];
+    	msg.width_hallway = abs(r[0]-r[1]) * RESOLUTION_FACTOR;
+
+    	hallwayPublisher.publish(msg);
+    }
+
+}
