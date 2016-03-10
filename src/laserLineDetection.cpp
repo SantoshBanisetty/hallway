@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+#include <stdint.h>
 
 #include "ros/ros.h"
 #include "std_msgs/String.h"
@@ -35,6 +36,8 @@ int laserOriginY = MAXROWS/2;
 int shiftedOriginX = -MAXCOLS*RESOLUTION_FACTOR/2;
 int shiftedOriginY = -MAXROWS*RESOLUTION_FACTOR/2;
 
+uint8_t debugCount = 0;
+
 using namespace cv;
 using namespace std;
 
@@ -48,6 +51,7 @@ void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
 {
 	//ROS_INFO("I am called!");
 	Mat image(MAXROWS,MAXCOLS, CV_8UC1, Scalar(255));
+	Mat flipped;
 	for (int i = -2; i < 3; ++i)
 	{
 		for (int j = -2; j < 3; ++j)
@@ -105,8 +109,9 @@ void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
 		}
 		
 	} 
-
-    hough_lines(image);
+	flip (image, flipped, 0);
+    hough_lines(flipped);
+    //hough_lines(image);
     // namedWindow("Display Image", WINDOW_AUTOSIZE );
     // imshow("Display Image", image);
     // waitKey(0);
@@ -207,9 +212,9 @@ void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
     }
 
    	publishHallwayData (r, modeOfTheta);
-
+   	//ROS_INFO ("I am here! : %d", debugCount++);
     imshow("Hallway", img);
-    waitKey(3);
+    waitKey(10);
     
     /*
    	Original hough transform that detects lines ands their duplicates
@@ -237,8 +242,9 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
 {
 	hallway::hallwayMsg msg;
     stringstream ss;
-
-    ss << "Not with respect to the PR2 yet!";
+    std::vector<double> slope;
+    std::vector<double> yIntercept;
+    ss << "base_link";
 
     // ROS_INFO ("theta : %f", modeOfTheta);
     // for (int i = 0; i < r.size(); ++i)
@@ -248,12 +254,37 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
     
     if (r.size() == 2) //if hallway 
     {
-    	msg.frame_id = ss.str();
-    	msg.theta_hallway = modeOfTheta;
-    	msg.r_hallway = r[0];
-    	msg.width_hallway = abs(r[0]-r[1]) * RESOLUTION_FACTOR;
+    	for (int i = 0; i < r.size(); i++)
+    	{
+    	//ROS_INFO ("r values [%d] : %f", i, r[i]);
+    		if (r[i] > 0)
+    		{
+				Point pt1, pt2;
+				double a = cos(modeOfTheta), b = sin(modeOfTheta);
+				double x0 = a*r[i], y0 = b*r[i];
+				int backToBaseX = (x0 - laserOriginX)/RESOLUTION_FACTOR;
+				int backToBaseY = (y0 - laserOriginY)/RESOLUTION_FACTOR;
+				pt1.x = cvRound(backToBaseX + 1000*(-b));
+				pt1.y = cvRound(backToBaseY + 1000*(a));
+				pt2.x = cvRound(backToBaseX - 1000*(-b));
+				pt2.y = cvRound(backToBaseY - 1000*(a));
+				//line( img, pt1, pt2, Scalar(0,0,255), 2, CV_AA);
+				slope.push_back((pt2.y - pt1.y)/(pt2.x - pt1.x));
+				yIntercept.push_back(pt1.y - slope[i]*pt1.x);
+				ROS_INFO ("slope: %f and Y-Intercept: %f", slope[i], yIntercept[i]);
+			}
+    	}
 
-    	hallwayPublisher.publish(msg);
+    	if (slope.size() > 0 && yIntercept.size() > 0)
+    	{
+    		msg.frame_id = ss.str();
+    		msg.slope_hallwayL = slope[0];
+    		msg.intercept_hallwayL = yIntercept[0];
+    		msg.width_hallway = abs(r[0]-r[1]) * RESOLUTION_FACTOR;
+
+    		hallwayPublisher.publish(msg);	
+    	}
+    	
     }
 
 }

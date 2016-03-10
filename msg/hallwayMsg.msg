@@ -1,4 +1,4 @@
 string frame_id
-float32 theta_hallway
-float32 r_hallway
+float32 slope_hallwayL
+float32 intercept_hallwayL
 float32 width_hallway
