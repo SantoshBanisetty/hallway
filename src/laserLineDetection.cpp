@@ -269,9 +269,12 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
 				pt2.x = cvRound(backToBaseX - 1000*(-b));
 				pt2.y = cvRound(backToBaseY - 1000*(a));
 				//line( img, pt1, pt2, Scalar(0,0,255), 2, CV_AA);
-				slope.push_back((pt2.y - pt1.y)/(pt2.x - pt1.x));
-				yIntercept.push_back(pt1.y - slope[i]*pt1.x);
-				ROS_INFO ("slope: %f and Y-Intercept: %f", slope[i], yIntercept[i]);
+				if (pt2.x != pt1.x)// floating point exception (core dump)
+				{
+					slope.push_back((pt2.y - pt1.y)/(pt2.x - pt1.x));
+					yIntercept.push_back(pt1.y - slope[i]*pt1.x);
+					ROS_INFO ("slope: %f and Y-Intercept: %f", slope[i], yIntercept[i]);
+				}
 			}
     	}
 
