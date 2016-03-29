@@ -59,6 +59,11 @@ void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
 			image.at<uchar>(laserOriginY+j, laserOriginX+i) = 0;
 		}
 	}
+		for (int i = 3; i < 6; ++i)
+		{
+			image.at<uchar>(laserOriginY, laserOriginX+i) = 0;
+		}
+	
 	
 	if ( !image.data )
     {
@@ -262,8 +267,8 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
 				Point pt1, pt2;
 				double a = cos(modeOfTheta), b = sin(modeOfTheta);
 				double x0 = a*r[i], y0 = b*r[i];
-				int backToBaseX = (x0 - laserOriginX)/RESOLUTION_FACTOR;
-				int backToBaseY = (y0 - laserOriginY)/RESOLUTION_FACTOR;
+				int backToBaseX = (x0 - laserOriginX)*RESOLUTION_FACTOR;
+				int backToBaseY = (y0 - laserOriginY)*RESOLUTION_FACTOR;
 				pt1.x = cvRound(backToBaseX + 1000*(-b));
 				pt1.y = cvRound(backToBaseY + 1000*(a));
 				pt2.x = cvRound(backToBaseX - 1000*(-b));
@@ -271,8 +276,11 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
 				//line( img, pt1, pt2, Scalar(0,0,255), 2, CV_AA);
 				if (pt2.x != pt1.x)// floating point exception (core dump)
 				{
-					slope.push_back((pt2.y - pt1.y)/(pt2.x - pt1.x));
-					yIntercept.push_back(pt1.y - slope[i]*pt1.x);
+					ROS_INFO ("i value : %d", i);
+					ROS_INFO ("Point 1 : x- %d, y- %d", pt1.x, pt1.y);
+					ROS_INFO ("Point 2 : x- %d, y- %d", pt2.x, pt2.y);
+					slope.push_back((float)(pt2.y - pt1.y)/(float)(pt2.x - pt1.x));
+					yIntercept.push_back(pt1.y - slope[i]*pt1.x);// * RESOLUTION_FACTOR);
 					ROS_INFO ("slope: %f and Y-Intercept: %f", slope[i], yIntercept[i]);
 				}
 			}
