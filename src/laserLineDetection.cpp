@@ -23,12 +23,15 @@
 #include <sensor_msgs/image_encodings.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <visualization_msgs/Marker.h>
 
 #include "hallway/hallwayMsg.h"
+#include "hallway/markerMsg.h"
+#include "geometry_msgs/Point.h"
 
 //#define DEBUG
-#define MAXROWS 600
-#define MAXCOLS 600
+#define MAXROWS 700
+#define MAXCOLS 700
 #define RESOLUTION_FACTOR 3
 
 int laserOriginX = MAXCOLS/2;
@@ -38,14 +41,18 @@ int shiftedOriginY = -MAXROWS*RESOLUTION_FACTOR/2;
 
 uint8_t debugCount = 0;
 
+geometry_msgs::Point p1, p2;
+
 using namespace cv;
 using namespace std;
 
 ros::Publisher hallwayPublisher;
+ros::Publisher marker_pub;
 
 //laser_geometry::LaserProjection projector_;
 void publishHallwayData(vector<float> r, float modeOfTheta);
 void hough_lines(Mat img);
+//void hallwayMarkers(geometry_msgs::Point p1, geometry_msgs::Point p2);
 
 void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
 {
@@ -130,16 +137,9 @@ void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
  	ros::NodeHandle n;
  	hallwayPublisher = n.advertise<hallway::hallwayMsg>("hallway_data", 100);
  	ros::Subscriber laser = n.subscribe("/base_scan", 100, laserCallBack);
+    marker_pub = n.advertise<hallway::markerMsg>("hallway_marker_points", 100);
+  
 
- //ros::Rate rate(10);
- // while (ros::ok())
- // 	{
- // 		#ifdef DEBUG
- // 		ROS_INFO("Hurray! I am running!");
- // 		#endif
- // 		ros::spinOnce();
- //    	rate.sleep();
- // 	}
  	ros::spin();
 	return 0;
  }
@@ -156,7 +156,7 @@ void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
     vector<Vec2f> lines;
    
 
-    HoughLines(dst, lines, 1, CV_PI/180, 120, 0, 0 );
+    HoughLines(dst, lines, 1, CV_PI/180, 100, 0, 0 );
 
     //ROS_INFO ("# lines : %lu", lines.size());
 
@@ -250,7 +250,13 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
     std::vector<double> slope;
     std::vector<double> yIntercept;
     ss << "base_link";
+    std::vector<geometry_msgs::Point> markerPointsL;
+    std::vector<geometry_msgs::Point> markerPointsR;
 
+    hallway::markerMsg markMsg;
+    
+
+    
     // ROS_INFO ("theta : %f", modeOfTheta);
     // for (int i = 0; i < r.size(); ++i)
     // {
@@ -274,11 +280,29 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
 				pt2.x = cvRound(backToBaseX - 1000*(-b));
 				pt2.y = cvRound(backToBaseY - 1000*(a));
 				//line( img, pt1, pt2, Scalar(0,0,255), 2, CV_AA);
-				if (pt2.x != pt1.x)// floating point exception (core dump)
+				if (pt2.x != pt1.x)// to avoid floating point exception (core dump)
 				{
 					ROS_INFO ("i value : %d", i);
 					ROS_INFO ("Point 1 : x- %d, y- %d", pt1.x, pt1.y);
 					ROS_INFO ("Point 2 : x- %d, y- %d", pt2.x, pt2.y);
+                    
+                    p1.x = pt1.x*0.015;
+                    p1.y = pt1.y*0.015;
+                    p1.z = 0;
+                    p2.x = pt2.x*0.015;
+                    p2.y = pt2.y*0.015;
+                    p2.z = 0;
+                    if (i == 0)
+                    {
+                        markerPointsL.push_back(p1);
+                        markerPointsL.push_back(p2);
+                    }
+                    else if (i == 1)
+                    {
+                        markerPointsR.push_back(p1);
+                        markerPointsR.push_back(p2);
+                    }
+                    // hallwayMarkers(p1, p2);
 					slope.push_back((float)(pt2.y - pt1.y)/(float)(pt2.x - pt1.x));
 					yIntercept.push_back(pt1.y - slope[i]*pt1.x);// * RESOLUTION_FACTOR);
 					ROS_INFO ("slope: %f and Y-Intercept: %f", slope[i], yIntercept[i]);
@@ -293,9 +317,74 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
     		msg.intercept_hallwayL = yIntercept[0];
     		msg.width_hallway = abs(r[0]-r[1]) * RESOLUTION_FACTOR;
 
-    		hallwayPublisher.publish(msg);	
+            if (markerPointsL.size() == 2)
+            {
+                markMsg.pointL1 = markerPointsL[0];
+                markMsg.pointL2 = markerPointsL[1];
+            }
+            if (markerPointsR.size() == 2)
+            {
+                markMsg.pointR1 = markerPointsR[0];
+                markMsg.pointR2 = markerPointsR[1];
+            }
+            
+    		hallwayPublisher.publish(msg);
+            marker_pub.publish(markMsg);
     	}
     	
     }
 
 }
+
+// void hallwayMarkers(geometry_msgs::Point p1, geometry_msgs::Point p2)
+// {
+//     float f = 0.0;
+ 
+//     //line
+//     visualization_msgs::Marker line_strip, points;
+//     line_strip.header.frame_id = points.header.frame_id = "/my_frame";
+//     line_strip.header.stamp = points.header.stamp = ros::Time::now();
+//     line_strip.ns = points.ns = "laserLineDetection";
+//     line_strip.action = points.action = visualization_msgs::Marker::ADD;
+//     line_strip.pose.orientation.w = points.pose.orientation.w = 1.0;
+    
+//     line_strip.id = 1; 
+//     points.id - 2;
+
+//     line_strip.type = visualization_msgs::Marker::LINE_STRIP;
+//     points.type = visualization_msgs::Marker::POINTS;
+
+//     // LINE_STRIP/LINE_LIST markers use only the x component of scale, for the line width
+//     line_strip.scale.x = 0.1;
+  
+//     // POINTS markers use x and y scale for width/height respectively
+//     points.scale.x = 0.2;
+//     points.scale.y = 0.2; 
+
+//     // Line strip is blue
+//     line_strip.color.b = 1.0;
+//     line_strip.color.a = 1.0;
+
+//     // Points are green
+//     points.color.g = 1.0f;
+//     points.color.a = 1.0;
+
+//     // Create the vertices for the points and lines
+//     for (uint32_t i = 1; i < 4; ++i)
+//     {
+//       // float y = 100-i; //* sin(f + i / 100.0f * 2 * M_PI);
+//       // float z = i; //* cos(f + i / 100.0f * 2 * M_PI);
+
+//       geometry_msgs::Point p;
+//       p.x = 1;//(int32_t)i - 50;
+//       p.y = i*2.55;//y;
+//       p.z = 0;//z;
+
+//       line_strip.points.push_back(p);
+//       points.points.push_back(p);
+      
+//     }
+   
+//     marker_pub.publish(line_strip);
+//     marker_pub.publish(points);
+// }

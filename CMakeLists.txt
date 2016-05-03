@@ -61,6 +61,7 @@ find_package(PCL REQUIRED)
  add_message_files(
    FILES
    hallwayMsg.msg
+   markerMsg.msg
   )
 
 ## Generate services in the 'srv' folder
@@ -81,6 +82,7 @@ find_package(PCL REQUIRED)
  generate_messages(
    DEPENDENCIES
    std_msgs
+   geometry_msgs
  )
 
 ################################################
@@ -207,14 +209,14 @@ link_directories(${PCL_LIBRARY_DIRS})
 #This will create executables of the nodes
 add_executable(laserLineDetection src/laserLineDetection.cpp)
 add_executable(scanToCloud src/scanToCloud.cpp)
-#add_executable(demo_topic_subscriber src/demo_topic_subscriber.cpp)
+add_executable(markers src/markers.cpp)
 
 #This will generate message header file before building the target
 add_dependencies(laserLineDetection hallway_generate_messages_cpp)
 add_dependencies(scanToCloud hallway_generate_messages_cpp)
-#add_dependencies(demo_topic_subscriber mastering_ros_demo_pkg_generate_messages_cpp)
+add_dependencies(markers hallway_generate_messages_cpp)
 
 #This will link executables to the appropriate libraries 
 target_link_libraries(laserLineDetection ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
 target_link_libraries(scanToCloud ${catkin_LIBRARIES} ${PCL_LIBRARIES})
-#target_link_libraries(demo_topic_subscriber ${catkin_LIBRARIES})
+target_link_libraries(markers ${catkin_LIBRARIES})
