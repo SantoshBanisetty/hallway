@@ -309,7 +309,8 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
 				}
 			}
     	}
-
+        //Check to see if there is any valid data. if not core dump will occur. 
+        //publish hallway data
     	if (slope.size() > 0 && yIntercept.size() > 0)
     	{
     		msg.frame_id = ss.str();
