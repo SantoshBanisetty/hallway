@@ -1,7 +1,7 @@
  /*
  @File: laserLineDetection.cpp
  @Author: Santosh
- @Description: Eventually to find hallways using laser data
+ @Description: To find hallways using laser data
  */
 #include <iostream>
 #include <vector>
