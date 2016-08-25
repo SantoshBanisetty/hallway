@@ -14,15 +14,15 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   laser_geometry
   message_filters
-  pcl_conversions
-  pcl_ros
-  pcl_msgs
+  #pcl_conversions
+  #pcl_ros
+  #pcl_msgs
   cv_bridge
   image_transport
   message_generation
 )
 
-find_package(PCL REQUIRED)
+#find_package(PCL REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -130,7 +130,7 @@ catkin_package(
 # include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
-  ${PCL_INCLUDE_DIRS}
+  #${PCL_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
 )
 
@@ -204,19 +204,19 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-link_directories(${PCL_LIBRARY_DIRS})
+#link_directories(${PCL_LIBRARY_DIRS})
 
 #This will create executables of the nodes
 add_executable(laserLineDetection src/laserLineDetection.cpp)
-add_executable(scanToCloud src/scanToCloud.cpp)
+#add_executable(scanToCloud src/scanToCloud.cpp)
 add_executable(markers src/markers.cpp)
 
 #This will generate message header file before building the target
 add_dependencies(laserLineDetection hallway_generate_messages_cpp)
-add_dependencies(scanToCloud hallway_generate_messages_cpp)
+#add_dependencies(scanToCloud hallway_generate_messages_cpp)
 add_dependencies(markers hallway_generate_messages_cpp)
 
 #This will link executables to the appropriate libraries 
-target_link_libraries(laserLineDetection ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${OpenCV_LIBRARIES})
-target_link_libraries(scanToCloud ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(laserLineDetection ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+#target_link_libraries(scanToCloud ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 target_link_libraries(markers ${catkin_LIBRARIES})
