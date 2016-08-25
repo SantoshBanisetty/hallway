@@ -285,11 +285,11 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
 					ROS_INFO ("i value : %d", i);
 					ROS_INFO ("Point 1 : x- %d, y- %d", pt1.x, pt1.y);
 					ROS_INFO ("Point 2 : x- %d, y- %d", pt2.x, pt2.y);
-                    
-                    p1.x = pt1.x*0.015;
+                    //- to eliminate the mirroring of the markers
+                    p1.x = -pt1.x*0.015;
                     p1.y = pt1.y*0.015;
                     p1.z = 0;
-                    p2.x = pt2.x*0.015;
+                    p2.x = -pt2.x*0.015;
                     p2.y = pt2.y*0.015;
                     p2.z = 0;
                     if (i == 0)

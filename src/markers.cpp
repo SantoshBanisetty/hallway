@@ -43,14 +43,14 @@ int main( int argc, char** argv )
   ros::init(argc, argv, "points_and_lines");
   ros::NodeHandle n;
   ros::Subscriber sub = n.subscribe("hallway_marker_points", 1000, hallwayVisualizationCallback);
-  marker_pub = n.advertise<visualization_msgs::Marker>("visualization_marker", 100);
+  marker_pub = n.advertise<visualization_msgs::Marker>("visual_marker", 100);
 
   //ros::Rate r(30);
 
   //float f = 0.0;
   // while (ros::ok())
   // {
-    points.header.frame_id = line_stripL.header.frame_id = line_stripR.header.frame_id = "/base_link";
+    points.header.frame_id = line_stripL.header.frame_id = line_stripR.header.frame_id = "/base_laser_link";
     points.header.stamp = line_stripL.header.stamp = line_stripR.header.stamp = ros::Time::now();
     points.ns = line_stripL.ns = line_stripR.ns = "points_and_lines";
     points.action = line_stripL.action = line_stripR.action = visualization_msgs::Marker::ADD;
