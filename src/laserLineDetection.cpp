@@ -5,7 +5,7 @@
  */
 #include <iostream>
 #include <vector>
-#include <sstream>
+#include <string>
 #include <stdint.h>
 
 #include "ros/ros.h"
@@ -46,6 +46,8 @@ geometry_msgs::Point p1, p2;
 using namespace cv;
 using namespace std;
 
+string ss;
+
 ros::Publisher hallwayPublisher;
 ros::Publisher marker_pub;
 
@@ -56,6 +58,7 @@ void hough_lines(Mat img);
 
 void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
 {
+	ss = laserMsg->header.frame_id.c_str();
 	//ROS_INFO("I am called!");
 	Mat image(MAXROWS,MAXCOLS, CV_8UC1, Scalar(255));
 	Mat flipped;
@@ -246,10 +249,10 @@ void laserCallBack(const sensor_msgs::LaserScan::ConstPtr & laserMsg)
 void publishHallwayData(vector<float> r, float modeOfTheta)
 {
 	hallway::hallwayMsg msg;
-    stringstream ss;
+    //stringstream ss;
     std::vector<double> slope;
     std::vector<double> yIntercept;
-    ss << "base_link";
+    //ss << "base_link";
     std::vector<geometry_msgs::Point> markerPointsL;
     std::vector<geometry_msgs::Point> markerPointsR;
 
@@ -313,7 +316,7 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
         //publish hallway data
     	if (slope.size() > 0 && yIntercept.size() > 0)
     	{
-    		msg.frame_id = ss.str();
+    		msg.frame_id = ss;
     		msg.slope_hallwayL = slope[0];
     		msg.intercept_hallwayL = yIntercept[0];
     		msg.width_hallway = abs(r[0]-r[1]) * RESOLUTION_FACTOR;
@@ -328,7 +331,7 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
                 markMsg.pointR1 = markerPointsR[0];
                 markMsg.pointR2 = markerPointsR[1];
             }
-            
+            ROS_INFO("frame_id is [%s]", msg.frame_id.c_str());
     		hallwayPublisher.publish(msg);
             marker_pub.publish(markMsg);
     	}
