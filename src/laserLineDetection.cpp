@@ -286,15 +286,17 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
 				if (pt2.x != pt1.x)// to avoid floating point exception (core dump)
 				{
 					ROS_INFO ("i value : %d", i);
-					ROS_INFO ("Point 1 : x- %d, y- %d", pt1.x, pt1.y);
-					ROS_INFO ("Point 2 : x- %d, y- %d", pt2.x, pt2.y);
+					//ROS_INFO ("RAW Point 1 :-: x: %d, y: %d", pt1.x, pt1.y);
+					//ROS_INFO ("RAW Point 2 :-: x: %d, y: %d", pt2.x, pt2.y);
                     //- to eliminate the mirroring of the markers
-                    p1.x = -pt1.x*0.015;
-                    p1.y = pt1.y*0.015;
+                    p1.x = -pt1.x*0.01; // I don't remember why 0.01, Guess m to cm conversion.
+                    p1.y = pt1.y*0.01;
                     p1.z = 0;
-                    p2.x = -pt2.x*0.015;
-                    p2.y = pt2.y*0.015;
+                    p2.x = -pt2.x*0.01;
+                    p2.y = pt2.y*0.01;
                     p2.z = 0;
+                    ROS_INFO ("Point 1 :-: x: %f, y: %f", p1.x, p1.y);
+                    ROS_INFO ("Point 2 :-: x: %f, y: %f", p2.x, p2.y);
                     if (i == 0)
                     {
                         markerPointsL.push_back(p1);
@@ -340,55 +342,3 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
 
 }
 
-// void hallwayMarkers(geometry_msgs::Point p1, geometry_msgs::Point p2)
-// {
-//     float f = 0.0;
- 
-//     //line
-//     visualization_msgs::Marker line_strip, points;
-//     line_strip.header.frame_id = points.header.frame_id = "/my_frame";
-//     line_strip.header.stamp = points.header.stamp = ros::Time::now();
-//     line_strip.ns = points.ns = "laserLineDetection";
-//     line_strip.action = points.action = visualization_msgs::Marker::ADD;
-//     line_strip.pose.orientation.w = points.pose.orientation.w = 1.0;
-    
-//     line_strip.id = 1; 
-//     points.id - 2;
-
-//     line_strip.type = visualization_msgs::Marker::LINE_STRIP;
-//     points.type = visualization_msgs::Marker::POINTS;
-
-//     // LINE_STRIP/LINE_LIST markers use only the x component of scale, for the line width
-//     line_strip.scale.x = 0.1;
-  
-//     // POINTS markers use x and y scale for width/height respectively
-//     points.scale.x = 0.2;
-//     points.scale.y = 0.2; 
-
-//     // Line strip is blue
-//     line_strip.color.b = 1.0;
-//     line_strip.color.a = 1.0;
-
-//     // Points are green
-//     points.color.g = 1.0f;
-//     points.color.a = 1.0;
-
-//     // Create the vertices for the points and lines
-//     for (uint32_t i = 1; i < 4; ++i)
-//     {
-//       // float y = 100-i; //* sin(f + i / 100.0f * 2 * M_PI);
-//       // float z = i; //* cos(f + i / 100.0f * 2 * M_PI);
-
-//       geometry_msgs::Point p;
-//       p.x = 1;//(int32_t)i - 50;
-//       p.y = i*2.55;//y;
-//       p.z = 0;//z;
-
-//       line_strip.points.push_back(p);
-//       points.points.push_back(p);
-      
-//     }
-   
-//     marker_pub.publish(line_strip);
-//     marker_pub.publish(points);
-// }

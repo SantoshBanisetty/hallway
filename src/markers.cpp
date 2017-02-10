@@ -6,6 +6,8 @@
 
 #include <cmath>
 
+
+
 ros::Publisher marker_pub;
 
     visualization_msgs::Marker points, line_stripL, line_stripR;
@@ -16,6 +18,8 @@ ros::Publisher marker_pub;
  */
 void hallwayVisualizationCallback(const hallway::markerMsg::ConstPtr& msg)
 {
+    geometry_msgs::Point robot;
+    robot.x = 0; robot.y = 0; robot.z = 0;
   ROS_INFO("I heard: ");
     points.points.push_back(msg->pointL1);
     line_stripL.points.push_back(msg->pointL1);
@@ -29,6 +33,8 @@ void hallwayVisualizationCallback(const hallway::markerMsg::ConstPtr& msg)
     points.points.push_back(msg->pointR2);
     line_stripR.points.push_back(msg->pointR2);
     ROS_INFO("pointR2: %f, %f", msg->pointR2.x, msg->pointR2.y);
+
+    points.points.push_back(robot);
     
     marker_pub.publish(points);
     marker_pub.publish(line_stripL);
