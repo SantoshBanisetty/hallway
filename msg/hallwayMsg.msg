@@ -2,3 +2,5 @@ string frame_id
 float32 slope_hallwayL
 float32 intercept_hallwayL
 float32 width_hallway
+geometry_msgs/Point hallwayPointL1
+geometry_msgs/Point hallwayPointL2

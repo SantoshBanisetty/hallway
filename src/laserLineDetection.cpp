@@ -322,6 +322,8 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
     		msg.slope_hallwayL = slope[0];
     		msg.intercept_hallwayL = yIntercept[0];
     		msg.width_hallway = abs(r[0]-r[1]) * RESOLUTION_FACTOR;
+            msg.hallwayPointL1 = p1;
+            msg.hallwayPointL2 = p2;
 
             if (markerPointsL.size() == 2)
             {
