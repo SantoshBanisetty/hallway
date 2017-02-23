@@ -338,7 +338,7 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
         //publish hallway data
     	if (slope.size() > 0 && yIntercept.size() > 0)
     	{
-            ROS_INFO("slope size: %d", slope.size());
+            //ROS_INFO("slope size: %d", slope.size());
     		msg.frame_id = ss;
     		msg.slope_hallwayL = slope[0];
     		msg.intercept_hallwayL = yIntercept[0];
@@ -350,6 +350,8 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
             {
                 markMsg.pointL1 = markerPointsL[0];
                 markMsg.pointL2 = markerPointsL[1];
+                msg.hallwayPointL1 = markerPointsL[0];
+                msg.hallwayPointL2 = markerPointsL[1];
             }
             if (markerPointsR.size() == 2)
             {
