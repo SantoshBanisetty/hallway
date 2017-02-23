@@ -285,7 +285,7 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
 				//line( img, pt1, pt2, Scalar(0,0,255), 2, CV_AA);
 				if (pt2.x != pt1.x)// to avoid floating point exception (core dump)
 				{
-					ROS_INFO ("i value : %d", i);
+					//ROS_INFO ("i value : %d", i);
 					//ROS_INFO ("RAW Point 1 :-: x: %d, y: %d", pt1.x, pt1.y);
 					//ROS_INFO ("RAW Point 2 :-: x: %d, y: %d", pt2.x, pt2.y);
                     //- to eliminate the mirroring of the markers
@@ -295,9 +295,25 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
                     p2.x = -pt2.x*0.01;
                     p2.y = pt2.y*0.01;
                     p2.z = 0;
-                    ROS_INFO ("Point 1 :-: x: %f, y: %f", p1.x, p1.y);
-                    ROS_INFO ("Point 2 :-: x: %f, y: %f", p2.x, p2.y);
-                    if (i == 0)
+
+                    //y positive is left side of hallway.
+                    if (p1.y >= 0)
+                    {
+                        markerPointsL.push_back(p1);
+                        markerPointsL.push_back(p2);
+                        ROS_INFO ("i value : %d", i);
+                        ROS_INFO ("Point 1 :-: x: %f, y: %f", p1.x, p1.y);
+                        ROS_INFO ("Point 2 :-: x: %f, y: %f", p2.x, p2.y);
+                    }
+                    else if (p1.y < 0)
+                    {
+                        markerPointsR.push_back(p1);
+                        markerPointsR.push_back(p2);
+                        ROS_INFO ("i value : %d", i);
+                        ROS_INFO ("Point 1 :-: x: %f, y: %f", p1.x, p1.y);
+                        ROS_INFO ("Point 2 :-: x: %f, y: %f", p2.x, p2.y);
+                    }
+                    /*if (i == 0)
                     {
                         markerPointsL.push_back(p1);
                         markerPointsL.push_back(p2);
@@ -306,11 +322,15 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
                     {
                         markerPointsR.push_back(p1);
                         markerPointsR.push_back(p2);
-                    }
+                    }*/
                     // hallwayMarkers(p1, p2);
-					slope.push_back((float)(pt2.y - pt1.y)/(float)(pt2.x - pt1.x));
-					yIntercept.push_back(pt1.y - slope[i]*pt1.x);// * RESOLUTION_FACTOR);
-					ROS_INFO ("slope: %f and Y-Intercept: %f", slope[i], yIntercept[i]);
+                    if (pt1.y >= 0) //just get the slope of left hallway only
+                    {
+                        slope.push_back((float)(pt2.y - pt1.y)/(float)(pt2.x - pt1.x));
+                        yIntercept.push_back(pt1.y - slope[i]*pt1.x);// * RESOLUTION_FACTOR);
+                        ROS_INFO ("slope: %f and Y-Intercept: %f", slope[i], yIntercept[i]);
+                    }
+					
 				}
 			}
     	}
@@ -318,6 +338,7 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
         //publish hallway data
     	if (slope.size() > 0 && yIntercept.size() > 0)
     	{
+            ROS_INFO("slope size: %d", slope.size());
     		msg.frame_id = ss;
     		msg.slope_hallwayL = slope[0];
     		msg.intercept_hallwayL = yIntercept[0];
