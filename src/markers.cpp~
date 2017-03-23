@@ -56,7 +56,7 @@ int main( int argc, char** argv )
   //float f = 0.0;
   // while (ros::ok())
   // {
-    points.header.frame_id = line_stripL.header.frame_id = line_stripR.header.frame_id = "robot_0/base_laser_link";
+    points.header.frame_id = line_stripL.header.frame_id = line_stripR.header.frame_id = "/robot_0/base_laser_link";
     points.header.stamp = line_stripL.header.stamp = line_stripR.header.stamp = ros::Time::now();
     points.ns = line_stripL.ns = line_stripR.ns = "points_and_lines";
     points.action = line_stripL.action = line_stripR.action = visualization_msgs::Marker::ADD;
