@@ -336,11 +336,11 @@ void publishHallwayData(vector<float> r, float modeOfTheta)
                     float x2 = -pt2.x*0.01;
                     float y2 = pt2.y*0.01;
  
-                    p1.x = x1 * cos(-fix) - y1 * sin(-fix);
-                    p1.y = x1 * sin(-fix) + y1 * cos(-fix);
+                    p1.x = x1 * cos(-fix+rotation) - y1 * sin(-fix+rotation);
+                    p1.y = x1 * sin(-fix+rotation) + y1 * cos(-fix+rotation);
                     p1.z = 0;
-                    p2.x = x2 * cos(-fix) - y2 * sin(-fix);
-                    p2.y = x2 * sin(-fix) + y2 * cos(-fix);
+                    p2.x = x2 * cos(-fix+rotation) - y2 * sin(-fix+rotation);
+                    p2.y = x2 * sin(-fix+rotation) + y2 * cos(-fix+rotation);
                     p2.z = 0;
 
                     temp.push_back(p1);
